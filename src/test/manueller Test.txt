@@ -1,0 +1,223 @@
+Manuelle Tests 
+
+AppUser
+
+select all users (findAll)
+Voraussetzung: Zeile findAll.forEach(currentUser -> currentUser.setPasswordDecoded("hidden".getBytes()));
+auskommentieren, damit auch die unterschiedlichen Passwörter angezeigt werden für weiter Tests kann das Ergebnis als Body-Vorlage dienen.
+Im Browser eingeben: http://localhost:8080/appUsers
+-> Es erscheinen alle User
+Nachdem weitere Tests durchgeführt wurden, Zeile 
+findAll.forEach(currentUser -> currentUser.setPasswordDecoded("hidden".getBytes()));
+wieder aktiv schalten.
+
+newAppUser
+Drei Szenarien:
+1. Positiv, Nutzer kann angelegt werden
+2. Negativ, unterschiedliche Passwörter
+3. Negativ, e-mail existiert schon.
+Method: POST
+URL: localhost:8080/appUsers
+Headers: content-type application/json
+1. Test (positiv) 
+Body {"eMailAddress":"d.b@c.de","passwordDecodedScnd":"YWI=","passwordDecoded":"YWI="}
+(am Besten aus findAll rauskopieren und email, id und last login löschen und passwordDecodedScnd:... anpassen.)
+-> Ergebnis sollte etwa so aussehen
+{
+    "id": 4,
+    "eMailAddress": "d.b@c.de",
+    "passwordDecodedScnd": "YWI=",
+    "passwordDecoded": "YWI=",
+    "lastLogin": "2021-04-13T08:01:09.280+00:00"
+}
+-> findAll zeigt den Eintrag mit an.
+2. Test: unterschiedliche Passwörter
+Body Body {"eMailAddress":"e.b@c.de","passwordDecodedScnd":"YWI=","passwordDecoded":"YWQ="}
+(2. Passwort aus anderem Ergebnis von findAll rauskopieren.)
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "Both password and second password must be filled with the same value."
+}
+3. Test: Password fehlt
+Body {"eMailAddress":"e.b@c.de","passwordDecodedScnd":"YWI="}
+->{
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "Both password and second password must be filled with the same value."
+}
+4. Test: PasswordScnd fehlt
+Body {"eMailAddress":"e.b@c.de","passwordDecoded":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "Both password and second password must be filled with the same value."
+}
+5. Test: E-Mail schon da
+Body {"eMailAddress":"e.b@c.de","passwordDecoded":"YWI=","passwordDecodedScnd":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "user with eMail address already exists"
+}
+6. Test: E-Mail fehlt
+Body {"eMailAddress":"","passwordDecoded":"YWI=","passwordDecodedScnd":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "eMail address must not be empty."
+}
+
+findOne (by id)
+Method get
+content-type application/json
+Zwei Tests:
+1. (positiv) URL localhost:8080/appUsers/2
+-> {
+    "id": 2,
+    "eMailAddress": "b.b@c.de",
+    "passwordDecodedScnd": null,
+    "passwordDecoded": "YWM=",
+    "lastLogin": "2021-04-13T12:26:55.259+00:00",
+    "resultMessage": "user found"
+}
+2. (negativ) URL localhost:8080/appUsers/4
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "no user found with id=4"
+}
+
+update
+Method: put
+content-type: application/json
+url: localhost:8080/appUsers/{id}
+1. PasswordScnd und E-Mail befüllt
+body: {"eMailAddress":"a.b@c.de","passwordDecodedScnd":"YWI=","passwordDecoded":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "Exactly one of new password or eMail address must be filled"
+}
+2. Weder PasswordScnd noch E-Mail befüllt
+body: {"eMailAddress":"","passwordDecodedScnd":null,"passwordDecoded":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "Exactly one of new password or eMail address must be filled"
+}
+3. Nur E-Mail befüllt (darauf achten, dass id in der URL und Password stimmen
+body: {"eMailAddress":"g.b@c.de","passwordDecodedScnd":null,"passwordDecoded":"YWI="}
+-> {
+    "id": 1,
+    "eMailAddress": "g.b@c.de",
+    "passwordDecodedScnd": null,
+    "passwordDecoded": "YWI=",
+    "lastLogin": "2021-04-13T13:58:08.572+00:00",
+    "resultMessage": "email address updated"
+}
+4. Nur E-Mail befüllt (darauf achten, dass id in der URL und Password stimmen). Diesmal aber mit existierender E-Mail (zum Beispiel aus vorigem Test)
+body: {"eMailAddress":"g.b@c.de","passwordDecodedScnd":null,"passwordDecoded":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "user with eMail address already exists"
+}
+5. Nur Password ist befüllt (darauf achten, dass id in der URL und Passwort stimmen). anderes Passwort kann sich von findAll-Test geklaut werden
+body: {"passwordDecodedScnd":"YWM=","passwordDecoded":"YWI="}
+-> {
+    "id": 1,
+    "eMailAddress": "g.b@c.de",
+    "passwordDecodedScnd": null,
+    "passwordDecoded": "YWM=",
+    "lastLogin": "2021-04-13T14:02:25.006+00:00",
+    "resultMessage": "password updated"
+}
+6. Falsches Passwort (body kann aus vorigem Test übernommen werden, da sich das Passwort damit ja geändert hat)
+body: {"passwordDecodedScnd":"YWM=","passwordDecoded":"YWI="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "no user found with id=1 and password"
+}
+
+deleteUser
+Method: delete
+content-type: application/json
+url: localhost:8080/appUsers/{id}
+1. Falsches Passwort
+body: {"passwordDecoded":"YWM="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "no user found with id=1 and password"
+}
+2. richtiges Passwort
+body: {"passwordDecoded":"YWI="}
+-> {
+    "id": 1,
+    "eMailAddress": "a.b@c.de",
+    "passwordDecodedScnd": null,
+    "passwordDecoded": "YWI=",
+    "lastLogin": "2021-04-13T14:34:42.361+00:00",
+    "resultMessage": "user deleted"
+}
+Mit findAll kann auch überprüft werden, ob der User auch wirklich gelöscht ist.
+
+authentificate
+method: put
+url: localhost:8080/appUsers
+content-type: application/json
+1. falsches Passwort
+body: {"eMailAddress":"b.b@c.de","passwordDecoded":"YWQ="}
+-> {
+    "id": null,
+    "eMailAddress": null,
+    "passwordDecodedScnd": null,
+    "passwordDecoded": null,
+    "lastLogin": null,
+    "resultMessage": "wrong password"
+}
+2. richtiges Passwort
+body: {"eMailAddress":"b.b@c.de","passwordDecoded":"YWM="}
+-> {
+    "id": 2,
+    "eMailAddress": "b.b@c.de",
+    "passwordDecodedScnd": null,
+    "passwordDecoded": "YWM=",
+    "lastLogin": "2021-04-13T14:54:47.277+00:00",
+    "resultMessage": "auth ok"
+}
